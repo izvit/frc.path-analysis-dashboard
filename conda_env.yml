@@ -1,0 +1,13 @@
+name: frc.scout
+channels:
+  - defaults
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      - dash
+      - pandas
+      - dash-bootstrap-components
+      - dash_bootstrap_templates
+      - Flask-SQLAlchemy
+      - pillow
