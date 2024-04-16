@@ -34,6 +34,19 @@ with app.server.app_context():
 class Match(db.Model):
     __table__ = db.Model.metadata.tables['match']
 
+######################
+## Helper Objects
+######################
+event_colors = {
+    "scoreSpeaker" : "#00FF00",
+    "missSpeaker" : "red",
+    "scoreAmp" : "blue",
+    "missAmp" : "purple",
+    "move" : "white",
+    "pickup" : "orange",
+    "drop" : "black",
+    "init" : "cyan"
+}
 
 ######################
 ## Helper Functions
@@ -199,56 +212,6 @@ def draw_plotly_field(fig, fig_width=600, fig_height=300, margins=30, lwidth=3,
 def distance(pos0, pos1) -> np.double:
     return np.sqrt(np.power(pos0[0]-pos1[0],2) + np.power(pos0[1]-pos1[1],2))
 
-def generate_heatmap(events):
-
-    import math 
-    from PIL import Image, ImageDraw 
-
-    #y=mx+b
-    #ax+by=c
-
-    events = [(0, 0), (-2, -2)]
-    heatmap = np.array((600,300), np.int32)
-    step = 1
-    for i in range(len(events)-1):
-        p0 = events[i]
-        p1 = events[i+1]
-        
-        theta = np.arctan((p1[1] - p0[1])/(p1[0] - p0[0]))
-        
-        dy = step * np.sin(theta)
-        dx = step * np.cos(theta) 
-
-        x=p0[0]
-        y=p0[1]
-
-        print(f"line [theta: {theta}, x: {x}, y: {y}, dx: {dx}, dy: {dy}]", flush=True)
-
-
-        while(True):
-            
-            if distance((x,y), p1) <= step:
-                break
-
-            x+=dx
-            y+=dy
-            
-            print(f"line [theta: {theta}, x: {x}, y: {y}, dx: {dx}, dy: {dy}]", flush=True)
-
-  
-    w, h = 220, 190
-    shape = [(40, 40), (w - 10, h - 10)]
-    shape2 = [(40, 40), (w - 30, h - 40)] 
-    
-    # creating new Image object 
-    img = Image.new("RGBA", (w, h)) 
-    
-    # create line image 
-    img1 = ImageDraw.Draw(img)   
-    img1.line(shape, fill ="#FF000055", width = 10) 
-    img1.line(shape2, fill ="#FF000055", width = 10) 
-
-    return np.array(img)
 
 @app.callback(
     Output(component_id='display-graph', component_property='figure'),
@@ -260,17 +223,7 @@ def update_field(all_rows_data, slcted_row_idx):
             display_fig.data = [] 
             display_fig.layout.annotations=[]
             nrows=df.shape[0]
-            
-            event_colors = {
-                "scoreSpeaker" : "#00FF00",
-                "missSpeaker" : "red",
-                "move" : "white",
-                "pickup" : "orange",
-                "drop" : "black",
-                "init" : "cyan"
-            }
-
-           
+                       
             list_of_arrows = []
         
             print(df,flush=True)
@@ -334,7 +287,6 @@ def update_field(all_rows_data, slcted_row_idx):
 
 
 @app.callback(
-    Output(component_id='heatmap-figure', component_property='figure'),
     Output(component_id='game-event-table', component_property='data'),
     Input(component_id='team-select', component_property='value'),
     Input(component_id='match-select', component_property='value'),
@@ -362,16 +314,10 @@ def get_match_data(team, match, stage, event_types):
             #Apply event list filter
             filtered =[i for i in flat if i["name"] in event_types]
             
-            hm = generate_heatmap(flat)
-            print(hm, flush=True)
-            fig = px.imshow(hm)
-            # fig = px.imshow([[1, 20, 30],
-            #      [20, 1, 60],
-            #      [30, 60, 1]])
             
-            return fig, filtered
+            return  filtered
     
-    return {"data" : []}, []
+    return []
 
 
 @app.callback(
@@ -538,7 +484,6 @@ dashboard_page = dbc.Container([
                     style={'font=size': '14px'}),
             html.Hr(className="my-2"),
             display_graph,
-            heatmap_graph
         ],
             width=7,
             className="justify-content-center"
@@ -557,6 +502,7 @@ dashboard_page = dbc.Container([
                     dict( id='name', name='Event' ),
                     dict( id='npos.x', name='Normalized X Position', type='numeric' ),
                     dict( id='npos.y', name='Normalize Y Position' , type='numeric' ),
+                    dict( id='time', name='Time' , type='numeric' ),
                 ],
                 style_cell={
                     "fontFamily": "Ubuntu", 
